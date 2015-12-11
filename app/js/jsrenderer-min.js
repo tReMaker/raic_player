@@ -2336,7 +2336,8 @@ configuration.STAR_COUNT = 5000;Loader.resources = {
     projectiles: ["app/projectile/WASHER", "app/projectile/TIRE", "app/projectile/TIRE.png", "app/projectile/WASHER.png"],
 //    minimap: ["app/sprites/minimap/BOTTOM_HEADED_T.png", "app/sprites/minimap/CROSSROADS.png", "app/sprites/minimap/LEFT_BOTTOM_CORNER.png", "app/sprites/minimap/LEFT_HEADED_T.png", "app/sprites/minimap/LEFT_TOP_CORNER.png", "app/sprites/minimap/RIGHT_BOTTOM_CORNER.png", "app/sprites/minimap/RIGHT_HEADED_T.png", "app/sprites/minimap/RIGHT_TOP_CORNER.png", "app/sprites/minimap/TOP_HEADED_T.png", "app/sprites/minimap/HORIZONTAL.png", "app/sprites/minimap/VERTICAL.png", "app/sprites/minimap/FINISH_STAND.png"],
     desertMinimap: ["app/sprites/minimap/desert/BOTTOM_HEADED_T.png", "app/sprites/minimap/desert/CROSSROADS.png", "app/sprites/minimap/desert/LEFT_BOTTOM_CORNER.png", "app/sprites/minimap/desert/LEFT_HEADED_T.png", "app/sprites/minimap/desert/LEFT_TOP_CORNER.png", "app/sprites/minimap/desert/RIGHT_BOTTOM_CORNER.png", "app/sprites/minimap/desert/RIGHT_HEADED_T.png", "app/sprites/minimap/desert/RIGHT_TOP_CORNER.png", "app/sprites/minimap/desert/TOP_HEADED_T.png", "app/sprites/minimap/desert/HORIZONTAL.png", "app/sprites/minimap/desert/VERTICAL.png", "app/sprites/minimap/desert/FINISH_STAND.png"],
-    spaceMinimap: ["app/sprites/minimap/space/BOTTOM_HEADED_T.png", "app/sprites/minimap/space/CROSSROADS.png", "app/sprites/minimap/space/LEFT_BOTTOM_CORNER.png", "app/sprites/minimap/space/LEFT_HEADED_T.png", "app/sprites/minimap/space/LEFT_TOP_CORNER.png", "app/sprites/minimap/space/RIGHT_BOTTOM_CORNER.png", "app/sprites/minimap/space/RIGHT_HEADED_T.png", "app/sprites/minimap/space/RIGHT_TOP_CORNER.png", "app/sprites/minimap/space/TOP_HEADED_T.png", "app/sprites/minimap/space/HORIZONTAL.png", "app/sprites/minimap/space/VERTICAL.png", "app/sprites/minimap/space/FINISH_STAND.png"]
+    spaceMinimap: ["app/sprites/minimap/space/BOTTOM_HEADED_T.png", "app/sprites/minimap/space/CROSSROADS.png", "app/sprites/minimap/space/LEFT_BOTTOM_CORNER.png", "app/sprites/minimap/space/LEFT_HEADED_T.png", "app/sprites/minimap/space/LEFT_TOP_CORNER.png", "app/sprites/minimap/space/RIGHT_BOTTOM_CORNER.png", "app/sprites/minimap/space/RIGHT_HEADED_T.png", "app/sprites/minimap/space/RIGHT_TOP_CORNER.png", "app/sprites/minimap/space/TOP_HEADED_T.png", "app/sprites/minimap/space/HORIZONTAL.png", "app/sprites/minimap/space/VERTICAL.png", "app/sprites/minimap/space/FINISH_STAND.png"],
+    waypoint: ["app/sprites/waypoint/small/WAYPOINT.png", "app/road/WAYPOINT.png", "app/road/WAYPOINT"]
 };
 Loader.objUrl = ["app/road/FINISH_STAND", "app/road/FINISH_STAND.png"];
 
@@ -2553,6 +2554,17 @@ String.prototype.format = function () {
     makeShadow(bonus, true, false);
 
 	return bonus;
+}
+
+function makeWaypoint(config) {
+    var waypoint = Loader.instance.loadObj(configuration.ROAD_DIR + "WAYPOINT", configuration.ROAD_DIR + "WAYPOINT", "waypoint");
+    var scale = configuration.ROAD_SCALE;
+    waypoint.scale.set(scale, scale, scale);
+    waypoint.position.set(config.x, 0, config.z);
+
+    makeShadow(waypoint, true, false);
+
+    return waypoint;
 }
 
 function makeSlick(config) {
@@ -2848,6 +2860,7 @@ function GamePlayer(options) {
 
     this.minimap = [];
     this.carsSprite = [];
+    this.waypointSprite = null;
     this.mapHeight = null;
 
     this.staticObjects = null;
@@ -3351,6 +3364,25 @@ GamePlayer.prototype.animateMiniMap = function(context){
     this.carsSprite.forEach( function(carSprite) {
         carSprite.hidden = value;
     });
+
+    if (!value && !this.freeCamera) {
+        var id = this.objects.car[this.selectedCar];
+        var car;
+        for(var i = 0; i < context.scene.cars.length; i++) {
+            if (context.scene.cars[i].id == id)
+                car = context.scene.cars[i];
+        }
+
+        var waypoint_posx = configuration.TILE_SIZE * (car.nextWaypointX + .5);
+        var waypoint_posy = configuration.TILE_SIZE * (car.nextWaypointY + .5);
+        var waypointPosition = {x: waypoint_posx, y: waypoint_posy};
+        var position = this.positionWorldToMonitor(waypointPosition);
+        this.waypointSprite.x = position.x;
+        this.waypointSprite.y = position.y;
+        this.waypointSprite.hidden = false;
+    } else {
+        this.waypointSprite.hidden = true;
+    }
 };
 
 GamePlayer.prototype.initFpsAndTicks = function() {
@@ -3389,6 +3421,7 @@ GamePlayer.prototype.initWorld = function(context) {
     this.staticObjects.bonus = [];
     this.staticObjects.slick = [];
     this.staticObjects.stuff = [];
+    this.staticObjects.waypoint = null;
 
     this.rnd = new CustomRandom(context.scene.randomSeed);
 
@@ -3623,6 +3656,14 @@ GamePlayer.prototype.initWorld = function(context) {
         }
     }
 
+    this.waypointSprite = this.graphics.newSprite("app/sprites/waypoint/small/WAYPOINT.png", {
+        rowCount: 1,
+        columnCount: 1,
+        frameCount: 1,
+        zIndex: configuration.LABEL_ZINDEX + 1000,
+        scale: this.miniMapScale
+    });
+
     this.addBonuses(context.scene.bonuses);
     var ambient = new THREE.AmbientLight(0x555555);
     this.scene.add(ambient);
@@ -3719,6 +3760,24 @@ GamePlayer.prototype.renderCountdown = function(context) {
         this.countdownSprites[1].setFrame(10 + index);
         this.countdownSprites[1].hidden = false;
     }
+};
+
+GamePlayer.prototype.addWaypoint = function(context) {
+    var id = this.objects.car[this.selectedCar], car;
+
+    for(var i = 0; i < context.scene.cars.length; i++) {
+        if (context.scene.cars[i].id == id)
+            car = context.scene.cars[i];
+    }
+
+    var x = configuration.TILE_SIZE * (car.nextWaypointX + .5);
+    var y = configuration.TILE_SIZE * (car.nextWaypointY + .5);
+
+    this.staticObjects.waypoint = {
+        x: x,
+        z: y,
+        id: "waypoint_" + car.nextWaypointIndex
+    };
 };
 
 GamePlayer.prototype.addBonuses = function(bonuses) {
@@ -4304,6 +4363,28 @@ GamePlayer.prototype.animateBonuses = function(bonuses) {
     });
 };
 
+GamePlayer.prototype.animateWaypoint = function(context) {
+    var gamePlayer = this;
+
+    this.addWaypoint(context);
+
+    var waypoint = gamePlayer.scene.getObjectByName("waypoint");
+    var waypoint_exists = (waypoint !== undefined);
+
+    if (!this.freeCamera && !waypoint_exists) {
+        waypoint = makeWaypoint(this.staticObjects.waypoint);
+        gamePlayer.scene.add(waypoint);
+    } else if (this.freeCamera) {
+        gamePlayer.scene.remove(waypoint);
+        return;
+    }
+
+    if (waypoint_exists) {
+        waypoint.position.set(this.staticObjects.waypoint.x, 0, this.staticObjects.waypoint.z);
+        waypoint.rotation.y += configuration.BONUS_ROTATION;
+    }
+};
+
 GamePlayer.prototype.animateProjectiles = function(projectiles) {
 	var gamePlayer = this;
 
@@ -4588,6 +4669,7 @@ GamePlayer.prototype.animate = function(context) {
 
     this.animateSlicks(context.scene.oilSlicks);
     this.animateBonuses(context.scene.bonuses);
+    this.animateWaypoint(context);
 	this.animateProjectiles(context.scene.projectiles);
     this.animateMoon();
 
