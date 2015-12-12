@@ -2507,7 +2507,7 @@ Loader.instance = new Loader();function getBoundingBox(object3D) {
 	}
 	var box = null;
 
-	object3D.traverse( function(child) {
+	object3D.traverse(function (child) {
 		var geometry = child.geometry;
 
 		if (geometry != undefined) {
@@ -2523,7 +2523,7 @@ Loader.instance = new Loader();function getBoundingBox(object3D) {
 }
 
 function makeShadow(object, castShadow, receiveShadow) {
-	object.traverse( function(child) {
+	object.traverse(function (child) {
 		if (child instanceof THREE.Mesh) {
 			child.castShadow = castShadow;
 			child.receiveShadow = receiveShadow;
@@ -2532,11 +2532,62 @@ function makeShadow(object, castShadow, receiveShadow) {
 }
 
 String.prototype.format = function () {
-	var args = [].slice.call(arguments);
-	return this.replace(/(\{\d+\})/g, function (a){
-		return args[+(a.substr(1,a.length-2))||0];
-	});
-};function makeBonus(config) {
+    var args = [].slice.call(arguments);
+    return this.replace(/(\{\d+\})/g, function (a) {
+        return args[+(a.substr(1, a.length - 2)) || 0];
+    });
+};
+
+function makeLineDiv(x1, y1, x2, y2, location, div, hidden) {
+    if (y1 < y2) {
+        var pom = y1;
+        y1 = y2;
+        y2 = pom;
+        pom = x1;
+        x1 = x2;
+        x2 = pom;
+    }
+
+    var a = Math.abs(x1 - x2);
+    var b = Math.abs(y1 - y2);
+    var c;
+    var sx = (x1 + x2) / 2;
+    var sy = (y1 + y2) / 2;
+    var width = Math.sqrt(a * a + b * b);
+    var x = sx - width / 2;
+    var y = sy;
+
+    a = width / 2;
+
+    c = Math.abs(sx - x);
+
+    b = Math.sqrt(Math.abs(x1 - x) * Math.abs(x1 - x) + Math.abs(y1 - y) * Math.abs(y1 - y));
+
+    var cosb = (b * b - a * a - c * c) / (2 * a * c);
+    var rad = Math.acos(cosb);
+    var deg = (rad * 180) / Math.PI;
+
+    var htmlns = "http://www.w3.org/1999/xhtml";
+    if (!div)
+        div = document.createElementNS(htmlns, "div");
+    var color = location === 'desert/' ? "black" : "white";
+
+    div.setAttribute('style',
+        ("border:1px solid {0};" +
+        "width:{1}px;height:0px;" +
+        "-moz-transform:rotate({2}deg);" +
+        "-webkit-transform:rotate({3}deg);" +
+        "position:absolute;top:{4}px;left:{5}px;").format(color, width, deg, deg, y, x));
+    div.style.zIndex = 25;
+    div.style.opacity = "0.5";
+    if (hidden) {
+        div.style.display = "none";
+    } else {
+        div.style.display = "block";
+    }
+
+    return div;
+}function makeBonus(config) {
 	var type = config.type;
 	var bonus;
 	if (type === undefined) {// || ['PURE_SCORE'].indexOf(type) >= 0) {
@@ -3162,6 +3213,15 @@ GamePlayer.prototype.setupOptions = function() {
         configuration.set("enableFog", value);
         gamePlayer.enableFog = value;
     });
+
+    var miniMapWaypoint = $("#miniMapWaypoint");
+    miniMapWaypoint.attr("checked", configuration.get("miniMapWaypoint", false));
+    gamePlayer.miniMapWaypoint = configuration.get("miniMapWaypoint", false);
+    miniMapWaypoint.change(function() {
+        var value = ($(this).attr("checked") !== undefined);
+        configuration.set("miniMapWaypoint", value);
+        gamePlayer.miniMapWaypoint = value;
+    });
 };
 
 GamePlayer.prototype.handleKeyboard = function() {
@@ -3365,7 +3425,7 @@ GamePlayer.prototype.animateMiniMap = function(context){
         carSprite.hidden = value;
     });
 
-    if (!value && !this.freeCamera) {
+    if (!value && !this.freeCamera && this.miniMapWaypoint) {
         var id = this.objects.car[this.selectedCar];
         var car;
         for(var i = 0; i < context.scene.cars.length; i++) {
@@ -3457,8 +3517,10 @@ GamePlayer.prototype.initWorld = function(context) {
     this.initCameras();
     this.initRenderer();
     this.initLight();
-    this.invisibleMaterial = new THREE.MeshNormalMaterial( {transparent: true, opacity: 0});
 
+    this.invisibleMaterial = new THREE.MeshNormalMaterial( {transparent: true, opacity: 0});
+    this.waypointArrow = makeLineDiv(0, 0, 550, 550, this.location);
+    this.graphics.parent.appendChild(this.waypointArrow);
 
     var m = tiles.length;
     var n = tiles[0].length;
@@ -4287,13 +4349,15 @@ GamePlayer.prototype.animateExhaust = function(car) {
         }
     }
 
-	if (isNitroEnabled) {
-		particles.material.size = 20;
-		particles.material.opacity = 0.7;
-	} else {
-		particles.material.size = 50;
-		particles.material.opacity = 0.01;
-	}
+    if (particles.userData.visible) {
+    	if (isNitroEnabled) {
+    		particles.material.size = 20;
+    		particles.material.opacity = 0.7;
+    	} else {
+    		particles.material.size = 50;
+    		particles.material.opacity = 0.01;
+    	}
+    }
 
 	particles.position.x = car.position.x;
 	particles.position.z = car.position.z;
@@ -4315,6 +4379,8 @@ GamePlayer.prototype.animateSlicks = function(slicks) {
     this.staticObjects.slick.forEach(function(object) {
         var id = object.id;
         var slick = gamePlayer.scene.getObjectByName(id);
+        if (slick && !slick.userData.visible)
+            return;
         var slick_exists = (slick != undefined);
         var slick_expired = (slickTimeLeft[id] === undefined);
         if (!slick_exists && !slick_expired) {
@@ -4371,10 +4437,10 @@ GamePlayer.prototype.animateWaypoint = function(context) {
     var waypoint = gamePlayer.scene.getObjectByName("waypoint");
     var waypoint_exists = (waypoint !== undefined);
 
-    if (!this.freeCamera && !waypoint_exists) {
+    if (!this.freeCamera && !waypoint_exists && this.miniMapWaypoint) {
         waypoint = makeWaypoint(this.staticObjects.waypoint);
         gamePlayer.scene.add(waypoint);
-    } else if (this.freeCamera) {
+    } else if (this.freeCamera || !this.miniMapWaypoint) {
         gamePlayer.scene.remove(waypoint);
         return;
     }
@@ -4661,6 +4727,29 @@ GamePlayer.prototype.processObjectsVisibility = function(scene) {
     }
 };
 
+GamePlayer.prototype.animateWaypointArrow = function(scene) {
+    var selectedCarId = this.objects.car[this.selectedCar];
+    var car = null;
+    for(var i = 0; i < scene.cars.length; i++) {
+        if (scene.cars[i].id == selectedCarId) {
+            car = scene.cars[i];
+        }
+    }
+    var carPosition = this.positionWorldToMonitor({x: car.x, y: car.y});
+
+    var wx = (car.nextWaypointX + .5) * configuration.TILE_SIZE;
+    var wy = (car.nextWaypointY + .5) * configuration.TILE_SIZE;
+
+    var waypointPosition = this.positionWorldToMonitor({x: wx, y: wy});
+    makeLineDiv(this.scale * carPosition.x,
+                this.scale * carPosition.y,
+                this.scale * waypointPosition.x,
+                this.scale * waypointPosition.y,
+                this.location,
+                this.waypointArrow,
+                !(this.miniMapWaypoint && this.showMiniMap));
+};
+
 GamePlayer.prototype.animate = function(context) {
     this.animateEffects(context);
     this.animateCars(context);
@@ -4674,6 +4763,7 @@ GamePlayer.prototype.animate = function(context) {
     this.animateMoon();
 
     this.animateStuff();
+    this.animateWaypointArrow(context.scene);
 
     this.setupPlayersScore(context.scene.players);
 

@@ -1,80 +1,1 @@
-
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<link href="app/css/jsrenderer-min.css" type="text/css" rel="stylesheet">
-<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Concert One">
-<script src="lib/three.min.js"></script>
-<script src="app/js/jsrenderer-min.js"></script>
-</head>
-<body>
-    <div id="player" style=""></div>
-    <div id="options">
-        <div style="font-family: Concert One; float: left;height:0;width:0">&nbsp;</div>
-        <div class="row">
-            <div style="float: left; text-align: left;padding-bottom:4px;">
-                <label for="selectedCar">camera</label>
-                <select id="selectedCar">
-                    <option value="0">1 car</option>
-                    <option value="1">2 car</option>
-                    <option value="2">3 car</option>
-                    <option value="3">4 car</option>
-                    <option value="4">free</option>
-                </select>
-                <br/>
-                <label for="carEquipment">equipment</label>
-                <select id="carEquipment">
-                    <option value="0">selected car</option>
-                    <option value="1">all cars</option>
-                    <option value="2">disable</option>
-                </select>
-                <br/>
-                <label for="playSounds">sound (q)</label>
-                <input type="checkbox" id="playSounds"/><br/>
-                <label for="showMiniMap">minimap (m)</label>
-                <input type="checkbox" id="showMiniMap"/><br/>
-            </div>
-            <div style="float: left; padding-left: 50px;">
-                <label>Keys:</label><br/>
-                <label>select car - [1-4]</label><br/>
-                <label>camera keys - [wasd]</label><br/>
-                <label>camera zoom in/out - [k/j]</label><br/>
-                <label>next car - [n]</label><br/>
-            </div>
-            <div style="float: right; text-align: right;">
-                <label for="scale">scale</label>
-                <select id="scale">
-                    <option value="1.0">100%</option>
-                    <option value="0.75">75%</option>
-                    <option value="0.5">50%</option>
-                    <option value="0.25">25%</option>
-                </select>
-                <br/>
-            </div>
-            <div style="float: right; padding-right: 10px; text-align: right;">
-                <label for="enableShadow">shadow</label>
-                <input type="checkbox" id="enableShadow"/><br/>
-                <label for="enableFog">partial visibility</label>
-                <input type="checkbox" id="enableFog"/><br/>
-            </div>
-            <div style="float: right; padding-right: 10px; text-align: right;">
-                <label for="lowQuality">improve performance</label>
-                <input type="checkbox" id="lowQuality"/><br/>
-                <label for="allowFrameSkipping">skip frame</label>
-                <input type="checkbox" id="allowFrameSkipping"/><br/>
-            </div>
-            <br style="clear: both;"/>
-        </div>
-    </div>
-</body>
-<script>
-if ( !Detector.webgl ) {
-    alert("Your graphics card or browser does not seem to support WebGL. For more information please visit get.webgl.org");
-} else {
-    $(function () {
-        initializePlayer();
-    });
-}
-</script>
-</html>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link href="app/css/jsrenderer-min.css" type="text/css" rel="stylesheet"><link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Concert One"><script src="lib/three.min.js"></script><script src="app/js/jsrenderer-min.js"></script></head><body>    <div id="player" style=""></div>    <div id="options">        <div style="font-family: Concert One; float: left;height:0;width:0">&nbsp;</div>        <div class="row">            <div style="float: left; text-align: left;padding-bottom:4px;">                <label for="selectedCar">camera</label>                <select id="selectedCar">                    <option value="0">1 car</option>                    <option value="1">2 car</option>                    <option value="2">3 car</option>                    <option value="3">4 car</option>                    <option value="4">free</option>                </select>                <br/>                <label for="carEquipment">equipment</label>                <select id="carEquipment">                    <option value="0">selected car</option>                    <option value="1">all cars</option>                    <option value="2">disable</option>                </select>                <br/>            </div>            <div style="float: left; padding-left: 10px;">                <label for="playSounds">sound (q)</label>                <input type="checkbox" id="playSounds"/><br/>                <label for="showMiniMap">minimap (m)</label>                <input type="checkbox" id="showMiniMap"/><br/>                <label for="miniMapWaypoint">minimap waypoint</label>                <input type="checkbox" id="miniMapWaypoint"/><br/>            </div>            <div style="float: left; padding-left: 50px;">                <label>Keys:</label><br/>                <label>select car - [1-4]</label><br/>                <label>camera keys - [wasd]</label><br/>                <label>camera zoom in/out - [k/j]</label><br/>                <label>next car - [n]</label><br/>            </div>            <div style="float: right; text-align: right;">                <label for="scale">scale</label>                <select id="scale">                    <option value="1.0">100%</option>                    <option value="0.75">75%</option>                    <option value="0.5">50%</option>                    <option value="0.25">25%</option>                </select>                <br/>            </div>            <div style="float: right; padding-right: 10px; text-align: right;">                <label for="enableShadow">shadow</label>                <input type="checkbox" id="enableShadow"/><br/>                <label for="enableFog">partial visibility</label>                <input type="checkbox" id="enableFog"/><br/>            </div>            <div style="float: right; padding-right: 10px; text-align: right;">                <label for="lowQuality">improve performance</label>                <input type="checkbox" id="lowQuality"/><br/>                <label for="allowFrameSkipping">skip frame</label>                <input type="checkbox" id="allowFrameSkipping"/><br/>            </div>            <br style="clear: both;"/>        </div>    </div></body><script>if ( !Detector.webgl ) {    alert("Your graphics card or browser does not seem to support WebGL. For more information please visit get.webgl.org");} else {    $(function () {        initializePlayer();    });}</script></html>
